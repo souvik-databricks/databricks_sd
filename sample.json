@@ -4,17 +4,22 @@
       "workspace": "adb-984752964297111.11.azuredatabricks.net"
     },
     "targets": [
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0807-225846-motto493/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-060854-nyzaeg18/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0216-153209-q4tuichf/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-113216-xja5hlrp/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0908-194241-na3ezc37/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0127-195349-gvzrymhf/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0216-165819-dzhiafce/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0812-165614-tibia842/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-091526-gfsb5sl4/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-134414-uvv69r18/40001/",
-      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-132625-rhxs0cn1/40001/"
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0127-102632-gpyashn7/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0807-225846-motto493/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-060854-nyzaeg18/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-142825-9lbs9v7/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/1105-121337-t0kzhof7/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-140906-b0zmnadj/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0216-153209-q4tuichf/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-113216-xja5hlrp/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0216-140106-r27ieb3o/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0908-194241-na3ezc37/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0127-195349-gvzrymhf/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0216-165819-dzhiafce/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0812-165614-tibia842/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-091526-gfsb5sl4/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0217-134414-uvv69r18/8080/",
+      "https://adb-984752964297111.11.azuredatabricks.net/driver-proxy/o/0/0216-152202-nuxx283q/8080/"
     ]
   }
 ]
