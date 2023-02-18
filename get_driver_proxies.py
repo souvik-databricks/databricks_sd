@@ -12,7 +12,7 @@ args = vars(parser.parse_args())
 
 token = args["token"]
 instancename = args["workspace"]
-
+org_id = instancename.split('.')[0].split('-')[1]
 port = args["port"]
 
 api_client = ApiClient(
@@ -29,7 +29,7 @@ if clusters_list:
     targets = []
     for i in clusters_list:
         c_id = i.get("cluster_id")
-        targets.append(f"https://{instancename}/driver-proxy/o/0/{c_id}/{port}/")
+        targets.append(f"https://{instancename}/driver-proxy/o/{org_id}/{c_id}/{port}/")
 
 json_file = json.dumps([{
     "labels": {
