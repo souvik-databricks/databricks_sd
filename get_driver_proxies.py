@@ -29,7 +29,7 @@ if clusters_list:
     targets = []
     for i in clusters_list:
         c_id = i.get("cluster_id")
-        targets.append(f"https://{instancename}/driver-proxy/o/{org_id}/{c_id}/{port}/")
+        targets.append(f"https://{instancename}/driver-proxy-api/o/{org_id}/{c_id}/{port}/")
 
 json_file = json.dumps([{
     "labels": {
