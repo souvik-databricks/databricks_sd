@@ -1,9 +1,10 @@
 # Databricks notebook source
-# MAGIC %pip install databricks-sdk fastapi uvicorn
+# MAGIC %pip install databricks-sdk fastapi uvicorn nest_asyncio
 
 # COMMAND ----------
 
 SD_TARGET_PORT = 8000
+POLLING_INTERVAL = 15
 
 # COMMAND ----------
 
@@ -64,6 +65,52 @@ print(response.json())
 
 # COMMAND ----------
 
+import json
+
+def output_to_json(urls):
+
+  url_list = list(urls)  # Your list of URLs
+
+  label_dict = {}  # Your label dictionary
+
+  payload = [
+      {
+          "targets": url_list,
+          "labels": label_dict
+      }
+  ]
+
+  #json_payload = json.dumps(payload)  # Convert the payload to a JSON string
+
+
+  with open('payload.json', 'w') as f:
+      json.dump(payload, f, indent=4)  # Use indent for pretty-printing
+
+# COMMAND ----------
+
+import time
+
+from databricks.sdk import WorkspaceClient
+from databricks.sdk.service.compute import State
+
+def is_running_cluster(cluster):
+    return cluster.state in (
+        State.RUNNING, # if you add a comma, Python interprets it as a tuple
+    )
+
+w = WorkspaceClient(host=host, token=token)
+
+while True:
+  running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
+  urls = (generate_driver_proxy_url(host=host, workspace_id=workspace_id, cluster_id=cluster.cluster_id, port=40001, endpoint="metrics/json") for cluster in running_clusters)
+  output_to_json(urls)
+  time.sleep(POLLING_INTERVAL)  # Wait for 5 seconds
+
+
+# COMMAND ----------
+
+import time
+
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.compute import State
 
@@ -75,47 +122,33 @@ def is_running_cluster(cluster):
 w = WorkspaceClient(host=host, token=token)
 
 running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
-urls = (generate_driver_proxy_url(host=host, workspace_id=workspace_id, cluster_id=cluster.cluster_id, port=40001, endpoint="metrics/json") for cluster in running_clusters)
-
-# COMMAND ----------
-
-import json
-
-url_list = list(urls)  # Your list of URLs
-
-label_dict = {}  # Your label dictionary
-
-payload = [
-    {
-        "targets": url_list,
-        "labels": label_dict
-    }
-]
-
-json_payload = json.dumps(payload)  # Convert the payload to a JSON string
-
-print(json_payload)
+cluster_ids = (cluster.cluster_id for cluster in running_clusters)
+#print(list(cluster_ids))
 
 
 # COMMAND ----------
 
-from fastapi import FastAPI
-from typing import List, Dict, Any
-import uvicorn
+import requests
+from requests.auth import HTTPBasicAuth
 
-app = FastAPI()
+#url = f"https://{host}/api/2.0/cluster-metrics/metrics"
+url = "https://adb-984752964297111.11.azuredatabricks.net/api/2.0/cluster-metrics/metrics"
+data = {
+    "cluster_ids": list(cluster_ids),
+    "metric_names": []
+}
 
-@app.get("/payload")
-async def get_payload():
-    return json_payload
-  
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=SD_TARGET_PORT)
+headers = {"Authorization": f"Bearer {token}"}
+
+
+response = requests.get(url, headers=headers, json=data)
+
+print(response.json())
+
 
 # COMMAND ----------
 
-# MAGIC %scala
-# MAGIC dbutils.notebook.getContext.workspaceId
+print(url)
 
 # COMMAND ----------
 
