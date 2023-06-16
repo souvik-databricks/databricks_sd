@@ -1,90 +1,107 @@
 # Databricks notebook source
-# MAGIC %pip install databricks-sdk fastapi uvicorn nest_asyncio
+# MAGIC %pip install databricks-sdk
+
+# COMMAND ----------
+
+dbutils.library.restartPython()
 
 # COMMAND ----------
 
 SD_TARGET_PORT = 8000
-POLLING_INTERVAL = 15
+POLLING_INTERVAL = 30
 
 # COMMAND ----------
 
-host = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
+api_url = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
 token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
 workspace_id = dbutils.notebook.entry_point.getDbutils().notebook().getContext().workspaceId().getOrElse(None)
+host = dbutils.notebook.entry_point.getDbutils().notebook().getContext().browserHostName().getOrElse(None)
 
-# COMMAND ----------
+from dataclasses import dataclass
 
-def detect_cloud(host):
+@dataclass
+class NotebookContext:
+    api_url: str
+    token: str
+    workspace_id: str
+    host: str
+    cloud: str = None
 
-    suffix_url_settings = {
-        "aws": "cloud.databricks.com",
-        "azure": "azuredatabricks.net",
-    }
+    def __post_init__(self):
+        self.cloud = self.detect_cloud(self.host)
 
-    for cloud, suffix in suffix_url_settings.items():
-        if host.endswith(suffix):
-            return cloud
-    else:
-        raise ValueError(f"Cloud not detected given host={host}")
+    def detect_cloud(self, host):
+        suffix_url_settings = {
+            "aws": "cloud.databricks.com",
+            "azure": "azuredatabricks.net",
+        }
 
-
-def get_url_prefix(cloud):
-    cloud_prefix_mapping = {
-        "aws": "https://dbc-dp-",
-        "azure": "https://adb",
-    }
-    return cloud_prefix_mapping[cloud]
-
-
-def generate_driver_proxy_url(host, workspace_id, cluster_id, port, endpoint):
-    magic_number = int(workspace_id) % 20
-    
-    cloud = detect_cloud(host)
-    prefix = get_url_prefix(cloud)
-
-    new_url = f"{prefix}-{workspace_id}.{magic_number}.azuredatabricks.net/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}/{endpoint}"
-    return new_url
+        for cloud, suffix in suffix_url_settings.items():
+            if host and host.endswith(suffix):
+                return cloud
+        else:
+            raise ValueError(f"Cloud not detected given host={host}")
 
 
-api_endpoint = generate_driver_proxy_url(
-    host, workspace_id, cluster_id, 40001, "metrics/json"
+context = NotebookContext(
+  api_url=dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None),
+  token=dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None),
+  workspace_id=dbutils.notebook.entry_point.getDbutils().notebook().getContext().workspaceId().getOrElse(None),
+  host=dbutils.notebook.entry_point.getDbutils().notebook().getContext().browserHostName().getOrElse(None)
 )
-print(api_endpoint)
+
+
 
 # COMMAND ----------
 
-import requests
+def generate_driver_proxy_url(context: NotebookContext, cluster_id, port):
+    
+    if context.cloud == "azure":
+      magic_number = int(context.workspace_id) % 20
+      prefix = "https://adb"
+      new_url = f"{prefix}-{workspace_id}.{magic_number}.azuredatabricks.net/driver-proxy-api/o/{context.workspace_id}/{cluster_id}/{port}"
+    elif context.cloud == "aws":
+      new_url = f"https://{context.host}/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}"
+    return new_url
+  
+generate_driver_proxy_url(context, dbutils.notebook.entry_point.getDbutils().notebook().getContext().clusterId().getOrElse(None), 8000)
 
-url = api_endpoint
+# COMMAND ----------
 
-headers = {"Authorization": f"Bearer {token}"}
-
-response = requests.get(url, headers=headers)
-
-print(response.json())
+def generate_driver_proxy_url(context: NotebookContext, cluster_id, port) -> dict:
+    
+    result = dict()
+    if context.cloud == "azure":
+      magic_number = int(context.workspace_id) % 20
+      prefix = "https://adb"
+      #new_url = f"{prefix}-{workspace_id}.{magic_number}.azuredatabricks.net/driver-proxy-api/o/{context.workspace_id}/{cluster_id}/{port}"
+      result["targets"] = [f"{prefix}-{workspace_id}.{magic_number}.azuredatabricks.net"]
+      result["labels"] = {
+        "__port": str(port),
+        "cluster_id": cluster_id,
+        "workspace_id": str(context.workspace_id)
+      }
+    elif context.cloud == "aws":
+      #new_url = f"https://{context.host}/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}"
+      result["targets"] = [context.host]
+      result["labels"] = {
+        "__port": str(port),
+        "cluster_id": cluster_id,
+        "workspace_id": str(context.workspace_id)
+      }
+    return result
+  
+generate_driver_proxy_url(context, dbutils.notebook.entry_point.getDbutils().notebook().getContext().clusterId().getOrElse(None), 8000)
 
 # COMMAND ----------
 
 import json
 
-def output_to_json(urls):
+# TODO, add optional path var?
+def output_to_json(targets: list[dict[str,any]]) -> None:
 
-  url_list = list(urls)  # Your list of URLs
-
-  label_dict = {}  # Your label dictionary
-
-  payload = [
-      {
-          "targets": url_list,
-          "labels": label_dict
-      }
-  ]
-
-  #json_payload = json.dumps(payload)  # Convert the payload to a JSON string
-
-
-  with open('payload.json', 'w') as f:
-      json.dump(payload, f, indent=4)  # Use indent for pretty-printing
+  with open('clusters.json', 'w') as f:
+      json.dump(targets, f, indent=4)  # Use indent for pretty-printing
 
 # COMMAND ----------
 
@@ -92,63 +109,85 @@ import time
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.compute import State
+import requests
+from requests.auth import HTTPBasicAuth
 
 def is_running_cluster(cluster):
     return cluster.state in (
         State.RUNNING, # if you add a comma, Python interprets it as a tuple
     )
 
-w = WorkspaceClient(host=host, token=token)
+w = WorkspaceClient(host=api_url, token=token)
 
 while True:
   running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
-  urls = (generate_driver_proxy_url(host=host, workspace_id=workspace_id, cluster_id=cluster.cluster_id, port=40001, endpoint="metrics/json") for cluster in running_clusters)
-  output_to_json(urls)
+  cluster_ids = list(cluster.cluster_id for cluster in running_clusters)
+  targets = (generate_driver_proxy_url(context, cluster_id=cluster_id, port=40001) for cluster_id in cluster_ids)
+  output_to_json(list(targets))
   time.sleep(POLLING_INTERVAL)  # Wait for 5 seconds
 
 
 # COMMAND ----------
 
+import re
+
+api_url = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None)
+host = dbutils.notebook.entry_point.getDbutils().notebook().getContext().browserHostName().getOrElse(None)
+token = dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None)
+workspace_id = dbutils.notebook.entry_point.getDbutils().notebook().getContext().workspaceId().getOrElse(None)
+
+url = f"https://{host}/api/2.0/cluster-metrics/metrics"
+
+running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
+cluster_ids = list(cluster.cluster_id for cluster in running_clusters)
+
+data = {
+    "cluster_ids": cluster_ids,
+    "metric_names": []
+}
+headers = {"Authorization": f"Bearer {token}"}
+
+
+response = requests.get(url, headers=headers, json=data)
+
+text = response.text
+
+# Split metrics into lines
+lines = text.split('\n')
+
+# Prepare pattern
+pattern = re.compile('# TYPE (.+?) (.+?)')
+
+# Transform lines using list comprehension
+lines = [
+   re.sub('# TYPE (.+?) unknown', '# TYPE \\1 untyped', line)  # Change 'unknown' type to 'untyped'
+   for line in lines
+]
+
+# Join lines back into a single string
+metrics = '\n'.join(lines)
+
+with open("metrics.txt", "w") as f:
+  f.write(metrics)
+
+# COMMAND ----------
+
 import time
 
 from databricks.sdk import WorkspaceClient
 from databricks.sdk.service.compute import State
+import requests
+from requests.auth import HTTPBasicAuth
 
 def is_running_cluster(cluster):
     return cluster.state in (
         State.RUNNING, # if you add a comma, Python interprets it as a tuple
     )
 
-w = WorkspaceClient(host=host, token=token)
-
+w = WorkspaceClient(host=api_url, token=token)
 running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
-cluster_ids = (cluster.cluster_id for cluster in running_clusters)
-#print(list(cluster_ids))
-
-
-# COMMAND ----------
-
-import requests
-from requests.auth import HTTPBasicAuth
-
-#url = f"https://{host}/api/2.0/cluster-metrics/metrics"
-url = "https://adb-984752964297111.11.azuredatabricks.net/api/2.0/cluster-metrics/metrics"
-data = {
-    "cluster_ids": list(cluster_ids),
-    "metric_names": []
-}
-
-headers = {"Authorization": f"Bearer {token}"}
-
-
-response = requests.get(url, headers=headers, json=data)
-
-print(response.json())
-
-
-# COMMAND ----------
-
-print(url)
+cluster_ids = list(cluster.cluster_id for cluster in running_clusters)
+cluster_ids[1:3]
 
 # COMMAND ----------
 
