@@ -78,3 +78,7 @@ target/
 
 # Jetbrains Editors
 .idea/
+
+# flotsam
+clusters.json
+metrics.txt
