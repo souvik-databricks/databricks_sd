@@ -68,7 +68,7 @@ generate_driver_proxy_url(context, dbutils.notebook.entry_point.getDbutils().not
 
 # COMMAND ----------
 
-def generate_driver_proxy_url(context: NotebookContext, cluster_id, port) -> dict:
+def generate_driver_proxy_url(context: NotebookContext, cluster, port) -> dict:
     
     result = dict()
     if context.cloud == "azure":
@@ -78,20 +78,24 @@ def generate_driver_proxy_url(context: NotebookContext, cluster_id, port) -> dic
       result["targets"] = [f"{prefix}-{workspace_id}.{magic_number}.azuredatabricks.net"]
       result["labels"] = {
         "__port": str(port),
-        "cluster_id": cluster_id,
-        "workspace_id": str(context.workspace_id)
+        "cluster_id": cluster.cluster_id,
+        "workspace_id": str(context.workspace_id),
+        "cluster_name": cluster.default_tags["ClusterName"],
+        "creator_username": cluster.creator_user_name
       }
     elif context.cloud == "aws":
       #new_url = f"https://{context.host}/driver-proxy-api/o/{workspace_id}/{cluster_id}/{port}"
       result["targets"] = [context.host]
       result["labels"] = {
         "__port": str(port),
-        "cluster_id": cluster_id,
-        "workspace_id": str(context.workspace_id)
+        "cluster_id": cluster.cluster_id,
+        "workspace_id": str(context.workspace_id),
+        "cluster_name": cluster.default_tags["ClusterName"],
+        "creator_username": cluster.creator_user_name
       }
     return result
   
-generate_driver_proxy_url(context, dbutils.notebook.entry_point.getDbutils().notebook().getContext().clusterId().getOrElse(None), 8000)
+#generate_driver_proxy_url(context, dbutils.notebook.entry_point.getDbutils().notebook().getContext().clusterId().getOrElse(None), 8000)
 
 # COMMAND ----------
 
@@ -101,7 +105,7 @@ import json
 def output_to_json(targets: list[dict[str,any]]) -> None:
 
   with open('clusters.json', 'w') as f:
-      json.dump(targets, f, indent=4)  # Use indent for pretty-printing
+      json.dump(targets, f, indent=4)
 
 # COMMAND ----------
 
@@ -114,15 +118,14 @@ from requests.auth import HTTPBasicAuth
 
 def is_running_cluster(cluster):
     return cluster.state in (
-        State.RUNNING, # if you add a comma, Python interprets it as a tuple
+        State.RUNNING, # if you add a comma, Python interprets this as a tuple
     )
 
 w = WorkspaceClient(host=api_url, token=token)
 
 while True:
   running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
-  cluster_ids = list(cluster.cluster_id for cluster in running_clusters)
-  targets = (generate_driver_proxy_url(context, cluster_id=cluster_id, port=40001) for cluster_id in cluster_ids)
+  targets = (generate_driver_proxy_url(context, cluster=cluster, port=40001) for cluster in running_clusters)
   output_to_json(list(targets))
   time.sleep(POLLING_INTERVAL)  # Wait for 5 seconds
 
@@ -169,25 +172,6 @@ metrics = '\n'.join(lines)
 
 with open("metrics.txt", "w") as f:
   f.write(metrics)
-
-# COMMAND ----------
-
-import time
-
-from databricks.sdk import WorkspaceClient
-from databricks.sdk.service.compute import State
-import requests
-from requests.auth import HTTPBasicAuth
-
-def is_running_cluster(cluster):
-    return cluster.state in (
-        State.RUNNING, # if you add a comma, Python interprets it as a tuple
-    )
-
-w = WorkspaceClient(host=api_url, token=token)
-running_clusters = (c for c in w.clusters.list() if is_running_cluster(c))
-cluster_ids = list(cluster.cluster_id for cluster in running_clusters)
-cluster_ids[1:3]
 
 # COMMAND ----------
 
