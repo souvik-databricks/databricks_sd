@@ -1,5 +1,5 @@
 # Databricks notebook source
-# MAGIC %pip install databricks-sdk
+# MAGIC %pip install databricks-sdk ruamel.yaml
 
 # COMMAND ----------
 
@@ -25,6 +25,7 @@ class NotebookContext:
     token: str
     workspace_id: str
     host: str
+    cluster_id: str
     cloud: str = None
 
     def __post_init__(self):
@@ -47,7 +48,8 @@ context = NotebookContext(
   api_url=dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiUrl().getOrElse(None),
   token=dbutils.notebook.entry_point.getDbutils().notebook().getContext().apiToken().getOrElse(None),
   workspace_id=dbutils.notebook.entry_point.getDbutils().notebook().getContext().workspaceId().getOrElse(None),
-  host=dbutils.notebook.entry_point.getDbutils().notebook().getContext().browserHostName().getOrElse(None)
+  host=dbutils.notebook.entry_point.getDbutils().notebook().getContext().browserHostName().getOrElse(None),
+  cluster_id=dbutils.notebook.entry_point.getDbutils().notebook().getContext().clusterId().getOrElse(None)
 )
 
 
@@ -95,7 +97,6 @@ def generate_driver_proxy_url(context: NotebookContext, cluster, port) -> dict:
       }
     return result
   
-#generate_driver_proxy_url(context, dbutils.notebook.entry_point.getDbutils().notebook().getContext().clusterId().getOrElse(None), 8000)
 
 # COMMAND ----------
 
@@ -116,6 +117,7 @@ from databricks.sdk.service.compute import State
 import requests
 from requests.auth import HTTPBasicAuth
 import re
+
 
 def scrape_metrics():
   url = f"https://{host}/api/2.0/cluster-metrics/metrics"
