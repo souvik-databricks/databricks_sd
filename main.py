@@ -14,8 +14,8 @@ async def get_payload():
     return payload
 
 
-@app.get("/metrics", response_class=PlainTextResponse)
+@app.get("/cluster_metrics", response_class=PlainTextResponse)
 async def read_metrics():
-    with open("src/metrics.txt", "r") as f:
+    with open("src/cluster_metrics.txt", "r") as f:
         contents = f.read()
     return contents

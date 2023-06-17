@@ -53,8 +53,9 @@ def generate_html_link(url, text, new_tab=False):
   
 def generate_target_url(context):
   cluster_id = context.cluster_id
-  displayHTML(generate_html_link(f"https://{host}/driver-proxy/o/{workspace_id}/{cluster_id}/8000/metrics", "Metrics", )) 
-  displayHTML(generate_html_link(f"https://{host}/driver-proxy/o/{workspace_id}/{cluster_id}/8000/clusters", "Clusters", )) 
+  displayHTML(generate_html_link(f"https://{host}/driver-proxy/o/{workspace_id}/{cluster_id}/8000/cluster_metrics", "Cluster Metrics", )) 
+  displayHTML(generate_html_link(f"https://{host}/driver-proxy/o/{workspace_id}/{cluster_id}/8000/clusters", "Clusters", ))
+  displayHTML(generate_html_link(f"https://{host}/driver-proxy/o/{workspace_id}/{cluster_id}/8001/metrics", "Metrics (very meta)", )) 
 generate_target_url(context)
 
 # COMMAND ----------
@@ -64,7 +65,7 @@ import ruamel.yaml
 import sys
 
 
-def static_configs(context, port=8000, endpoint="metrics/"):
+def static_configs(context, port=8000, endpoint="cluster_metrics/"):
     return {
         "metrics_path": f"/driver-proxy-api/o/{context.workspace_id}/{context.cluster_id}/{port}/{endpoint}",
         "static_configs": [{"targets": ["e2-demo-field-eng.cloud.databricks.com"]}],
@@ -104,9 +105,6 @@ def relabel_configs(endpoint="metrics/executors/prometheus"):
     }
 
 
-toke = "PLUG_HERE"
-
-
 def get_confs(token, confs=[("databricks_sd", "sd"), ("databricks_static", "static")]):
     type_conf_mapping = {
         "sd": lambda name: {
@@ -137,7 +135,8 @@ def print_as_yaml(d, fresh=False):
     yaml.dump(d, sys.stdout)
 
 
-print_as_yaml(get_confs(toke), fresh=True)
+token = "PLUG_HERE"
+print_as_yaml(get_confs(token), fresh=True)
 
 # COMMAND ----------
 
