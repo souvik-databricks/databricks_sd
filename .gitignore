@@ -81,4 +81,4 @@ target/
 
 # flotsam
 clusters.json
-metrics.txt
+cluster_metrics.txt
