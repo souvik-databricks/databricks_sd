@@ -68,7 +68,7 @@ import sys
 def static_configs(context, port=8000, endpoint="cluster_metrics/"):
     return {
         "metrics_path": f"/driver-proxy-api/o/{context.workspace_id}/{context.cluster_id}/{port}/{endpoint}",
-        "static_configs": [{"targets": ["e2-demo-field-eng.cloud.databricks.com"]}],
+        "static_configs": [{"targets": [f"{context.host}"]}],
         "scheme": "https",
     }
 
@@ -81,7 +81,7 @@ def http_sd_configs(context, token, port=8000, endpoint="clusters/"):
     return {
         "http_sd_configs": [
             {
-                "url": f"https://e2-demo-field-eng.cloud.databricks.com/driver-proxy-api/o/{context.workspace_id}/{context.cluster_id}/{port}/{endpoint}",
+                "url": f"https://{context.host}/driver-proxy-api/o/{context.workspace_id}/{context.cluster_id}/{port}/{endpoint}",
                 "authorization": {"type": "Bearer", "credentials": token},
             }
         ]

@@ -526,9 +526,7 @@ def scrape_metrics_to_text(w, context):
 def generate_driver_proxy_url(context: NotebookContext, cluster, port) -> dict:
     result = dict()
     if context.cloud == "azure":
-      magic_number = int(context.workspace_id) % 20
-      prefix = "https://adb"
-      result["targets"] = [f"{prefix}-{workspace_id}.{magic_number}.azuredatabricks.net"]
+      result["targets"] = [context.host]
       result["labels"] = {
         "__port": str(port),
         "cluster_id": cluster.cluster_id,
