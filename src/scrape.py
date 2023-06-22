@@ -215,17 +215,4 @@ if __name__ == '__main__':
 
 # COMMAND ----------
 
-w = WorkspaceClient()
-w.serving_endpoints.export_metrics(w.serving_endpoints.list()[0].name)
-
-# COMMAND ----------
-
-endpoints = w.serving_endpoints.list()
-
-# COMMAND ----------
-
-endpoints[0].name
-
-# COMMAND ----------
-
 
