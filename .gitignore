@@ -82,3 +82,6 @@ target/
 # flotsam
 clusters.json
 cluster_metrics.txt
+data
+prometheus-2*
+prometheus.yml

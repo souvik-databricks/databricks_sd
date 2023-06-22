@@ -1,4 +1,5 @@
 # Databricks notebook source
+# DBTITLE 1,Installs
 # MAGIC %pip install uvicorn fastapi databricks-sdk ruamel.yaml
 
 # COMMAND ----------
@@ -45,6 +46,7 @@ context = NotebookContext(
 
 # COMMAND ----------
 
+# DBTITLE 1,Debug links
 workspace_id = dbutils.notebook.entry_point.getDbutils().notebook().getContext().workspaceId().getOrElse(None)
 host = dbutils.notebook.entry_point.getDbutils().notebook().getContext().browserHostName().getOrElse(None)
 def generate_html_link(url, text, new_tab=False):
@@ -60,6 +62,7 @@ generate_target_url(context)
 
 # COMMAND ----------
 
+# DBTITLE 1,YAML generation
 import json
 import ruamel.yaml
 import sys
@@ -140,9 +143,6 @@ print_as_yaml(get_confs(token), fresh=True)
 
 # COMMAND ----------
 
+# DBTITLE 1,App runner
 # MAGIC %sh
 # MAGIC uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-# COMMAND ----------
-
-
